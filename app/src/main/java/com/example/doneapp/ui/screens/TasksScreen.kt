@@ -52,310 +52,323 @@ import com.example.doneapp.R
 import com.example.doneapp.data.UiState
 import com.example.doneapp.data.models.Task
 import com.example.doneapp.data.models.TaskRequest
-import kotlinx.coroutines.delay
 
 
 @Composable
 fun TasksScreen(
-    showAddDialog: Boolean,
-    onShowDialogChange: (Boolean) -> Unit,
-    tasksViewModel: TasksViewModel
+  showAddDialog: Boolean,
+  onShowDialogChange: (Boolean) -> Unit,
+  tasksViewModel: TasksViewModel
 ) {
 
-    val tarefas by tasksViewModel.tasks.collectAsStateWithLifecycle()
-    LaunchedEffect(Unit) {
-        tasksViewModel.getTarefas()
+  val tarefas by tasksViewModel.tasks.collectAsStateWithLifecycle()
+  val loading by tasksViewModel.loading.collectAsStateWithLifecycle()
+  LaunchedEffect(Unit) {
+    tasksViewModel.getTarefas()
+  }
+
+  Column(
+    Modifier
+      .fillMaxSize()
+      .background(MaterialTheme.colorScheme.background)
+      .padding(16.dp)
+  ) {
+    Image(
+      painter = painterResource(R.drawable.logo),
+      null,
+      modifier = Modifier
+        .width(120.dp)
+        .height(80.dp)
+    )
+    if (loading)
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+      CircularProgressIndicator(color = MaterialTheme.colorScheme.primary )
     }
-
-    Column(
-        Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(16.dp)
-    ) {
-        Image(
-            painter = painterResource(R.drawable.logo),
-            null,
-            modifier = Modifier
-                .width(120.dp)
-                .height(80.dp)
-        )
-        Text(
-            "Your To-do list",
-            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Light)
-        )
+    Text(
+      "Your To-do list",
+      style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Light)
+    )
 
 
-        tarefas?.let {
-            when (it) {
-                is UiState.Error -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(it.msg)
-                    }
-                }
-
-                UiState.Loading -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                    }
-                }
-
-                is UiState.Success<List<Task>> -> {
-
-
-                    LazyColumn(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(top = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        items(it.result) { it ->
-                            var showEditDialog by remember { mutableStateOf(false) }
-                            var showDeleteDialog by remember { mutableStateOf(false) }
-
-                            TaskItem(it, { showEditDialog = it }, { showDeleteDialog = it })
-                            if (showDeleteDialog) {
-                                AppDialog(
-                                    close = { showDeleteDialog = false },
-                                    dismissButtonLabel = "Cancelar",
-                                    confirmButtonLabel = "Confirmar",
-                                    title = "Excluir tarefa",
-                                    action = {
-                                        tasksViewModel.deleteTarefa(it.id)
-                                    }
-                                ) {
-                                    Text("Tem certeza que deseja excluir a tarefa ${it.titulo}?")
-                                }
-                            }
-
-
-
-
-                            if (showEditDialog) {
-                                AppDialog(
-                                    close = { showEditDialog = false },
-                                    dismissButtonLabel = "Cancelar",
-                                    confirmButtonLabel = "Salvar",
-                                    title = "Editar tarefa"
-                                ) {
-                                    var titulo by remember { mutableStateOf(it.titulo) }
-                                    var descricao by remember { mutableStateOf(it.descricao) }
-                                    Column() {
-                                        OutlinedTextField(
-                                            value = titulo,
-                                            onValueChange = { titulo = it },
-                                            label = { Text("Título") }
-                                        )
-                                        OutlinedTextField(
-                                            value = descricao,
-                                            onValueChange = { descricao = it },
-                                            label = { Text("Descrição") }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    if (showAddDialog) {
-
-
-                        var titulo by remember { mutableStateOf("") }
-                        var descricao by remember { mutableStateOf("") }
-
-                        AppDialog(
-                            close = { onShowDialogChange(false) },
-                            dismissButtonLabel = "Cancelar",
-                            confirmButtonLabel = "Salvar",
-                            title = "Criar tarefa",
-                            action = {
-                                tasksViewModel.createTarefa(
-                                    TaskRequest(
-                                        titulo = titulo,
-                                        descricao = descricao
-                                    )
-                                )
-                               onShowDialogChange(false)
-                            }
-                        ) {
-
-                            Column() {
-                                OutlinedTextField(
-                                    value = titulo,
-                                    onValueChange = { titulo = it },
-                                    label = { Text("Título") }
-                                )
-                                OutlinedTextField(
-                                    value = descricao,
-                                    onValueChange = { descricao = it },
-                                    label = { Text("Descrição") }
-                                )
-                            }
-                        }
-                    }
-
-                }
-
-
-            }
+    tarefas?.let {
+      when (it) {
+        is UiState.Error -> {
+          Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text(it.msg)
+          }
         }
+
+        UiState.Loading -> {
+          Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+          }
+        }
+
+        is UiState.Success<List<Task>> -> {
+
+
+          LazyColumn(
+            Modifier
+              .fillMaxWidth()
+              .padding(top = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+          ) {
+            items(it.result) { it ->
+              var showEditDialog by remember { mutableStateOf(false) }
+              var showDeleteDialog by remember { mutableStateOf(false) }
+
+              TaskItem(it, { showEditDialog = it }, { showDeleteDialog = it }, {new-> tasksViewModel.toggleConcluida(it.copy(concluida = new))})
+              if (showDeleteDialog) {
+                AppDialog(
+                  close = { showDeleteDialog = false },
+                  dismissButtonLabel = "Cancelar",
+                  confirmButtonLabel = "Confirmar",
+                  title = "Excluir tarefa",
+                  action = {
+                    tasksViewModel.deleteTarefa(it.id)
+                    showDeleteDialog = false
+                  }
+
+                ) {
+                  Text("Tem certeza que deseja excluir a tarefa ${it.titulo}?")
+                }
+              }
+
+
+
+
+              if (showEditDialog) {
+                var titulo by remember { mutableStateOf(it.titulo) }
+                var descricao by remember { mutableStateOf(it.descricao) }
+                AppDialog(
+                  close = { showEditDialog = false },
+                  dismissButtonLabel = "Cancelar",
+                  confirmButtonLabel = "Salvar",
+                  title = "Editar tarefa",
+                  action = {
+                    tasksViewModel.editTarefa(
+                      it.copy(
+                        titulo = titulo,
+                        descricao = descricao
+                      )
+                    )
+                    showEditDialog = false
+                  }
+                ) {
+
+                  Column() {
+                    OutlinedTextField(
+                      value = titulo,
+                      onValueChange = { titulo = it },
+                      label = { Text("Título") }
+                    )
+                    OutlinedTextField(
+                      value = descricao,
+                      onValueChange = { descricao = it },
+                      label = { Text("Descrição") }
+                    )
+                  }
+                }
+              }
+            }
+          }
+
+          if (showAddDialog) {
+
+
+            var titulo by remember { mutableStateOf("") }
+            var descricao by remember { mutableStateOf("") }
+
+            AppDialog(
+              close = { onShowDialogChange(false) },
+              dismissButtonLabel = "Cancelar",
+              confirmButtonLabel = "Salvar",
+              title = "Criar tarefa",
+              action = {
+                tasksViewModel.createTarefa(
+                  TaskRequest(
+                    titulo = titulo,
+                    descricao = descricao
+                  )
+                )
+                onShowDialogChange(false)
+              }
+            ) {
+
+              Column() {
+                OutlinedTextField(
+                  value = titulo,
+                  onValueChange = { titulo = it },
+                  label = { Text("Título") }
+                )
+                OutlinedTextField(
+                  value = descricao,
+                  onValueChange = { descricao = it },
+                  label = { Text("Descrição") }
+                )
+              }
+            }
+          }
+
+        }
+
+
+      }
     }
+  }
 }
 
 
 @Composable
 fun AppDialog(
-    close: () -> Unit,
-    dismissButtonLabel: String,
-    confirmButtonLabel: String,
-    title: String,
-    action: () -> Unit = {},
-    content: @Composable () -> Unit,
+  close: () -> Unit,
+  dismissButtonLabel: String,
+  confirmButtonLabel: String,
+  title: String,
+  action: () -> Unit = {},
+  content: @Composable () -> Unit,
 
-    ) {
-    AlertDialog(
-        shape = RoundedCornerShape(12.dp),
-        containerColor = MaterialTheme.colorScheme.primaryContainer,
-        titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        onDismissRequest = { close() },
-        dismissButton = {
-            Button(
-                onClick = {
-                    close()
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.primary
-                ),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text(dismissButtonLabel)
-            }
+  ) {
+  AlertDialog(
+    shape = RoundedCornerShape(12.dp),
+    containerColor = MaterialTheme.colorScheme.primaryContainer,
+    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+    onDismissRequest = { close() },
+    dismissButton = {
+      Button(
+        onClick = {
+          close()
         },
-        confirmButton = {
-            Button(
-                shape = RoundedCornerShape(12.dp), onClick = { action() }) {
-                Text(confirmButtonLabel)
-            }
-        },
-        title = { Text(title, fontWeight = FontWeight.Bold) },
-        text = { content() }
-    )
+        colors = ButtonDefaults.buttonColors(
+          containerColor = MaterialTheme.colorScheme.surface,
+          contentColor = MaterialTheme.colorScheme.primary
+        ),
+        shape = RoundedCornerShape(12.dp)
+      ) {
+        Text(dismissButtonLabel)
+      }
+    },
+    confirmButton = {
+      Button(
+        shape = RoundedCornerShape(12.dp), onClick = { action() }) {
+        Text(confirmButtonLabel)
+      }
+    },
+    title = { Text(title, fontWeight = FontWeight.Bold) },
+    text = { content() }
+  )
 }
 
 @Composable
 fun TaskItem(
-    task: Task,
-    onEditDialogChange: (Boolean) -> Unit,
-    onDeleteDialogChange: (Boolean) -> Unit
+  task: Task,
+  onEditDialogChange: (Boolean) -> Unit,
+  onDeleteDialogChange: (Boolean) -> Unit,
+  onToggleConcluida: (Boolean) -> Unit
 ) {
 
-    var expanded by remember { mutableStateOf(false) }
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-        elevation = CardDefaults.cardElevation(2.dp)
+  var expanded by remember { mutableStateOf(false) }
+  Card(
+    modifier = Modifier.fillMaxWidth(),
+    shape = RoundedCornerShape(12.dp),
+    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+    elevation = CardDefaults.cardElevation(2.dp)
+  ) {
+    Column(
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 12.dp, vertical = 12.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 12.dp)
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        Text(
+          task.titulo,
+          style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+        )
+        Row(
+          horizontalArrangement = Arrangement.spacedBy(4.dp),
+          verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    task.titulo,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                )
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    FilledIconButton(
-                        onClick = {
-                            if (task.concluida) {
+          FilledIconButton(
+            onClick = {
+              onToggleConcluida(!task.concluida)
+            },
+            colors = IconButtonDefaults.iconButtonColors(
 
-                            } else {
-
-                            }
-                        },
-                        colors = IconButtonDefaults.iconButtonColors(
-
-                            containerColor = if (task.concluida) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.background,
-                            contentColor = MaterialTheme.colorScheme.primaryContainer
-                        ),
-                        shape = RoundedCornerShape(4.dp),
-                        modifier = Modifier
-                            .border(
-                                2.dp,
-                                MaterialTheme.colorScheme.primary,
-                                RoundedCornerShape(4.dp)
-                            )
-                            .size(28.dp)
-                    ) {
-                        if (task.concluida)
-                            Icon(
-                                Icons.Default.Check,
-                                contentDescription = null
-                            )
-                    }
+              containerColor = if (task.concluida) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.background,
+              contentColor = MaterialTheme.colorScheme.primaryContainer
+            ),
+            shape = RoundedCornerShape(4.dp),
+            modifier = Modifier
+              .border(
+                2.dp,
+                MaterialTheme.colorScheme.primary,
+                RoundedCornerShape(4.dp)
+              )
+              .size(28.dp)
+          ) {
+            if (task.concluida)
+              Icon(
+                Icons.Default.Check,
+                contentDescription = null
+              )
+          }
 
 
-                    IconButton(
-                        modifier = Modifier.size(28.dp),
-                        onClick = {
-                            onDeleteDialogChange(true)
-                        }
-                    ) {
-                        Icon(
-                            Icons.Default.Delete,
-                            null,
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                    }
-
-                    IconButton(
-                        modifier = Modifier.size(28.dp),
-                        onClick = {
-                            onEditDialogChange(true)
-                        }
-                    ) {
-                        Icon(
-                            Icons.Default.Edit,
-                            null,
-                            tint = MaterialTheme.colorScheme.secondary
-                        )
-                    }
-
-                    IconButton(
-                        modifier = Modifier.size(28.dp),
-                        onClick = {
-                            expanded = !expanded
-                        }
-                    ) {
-                        Icon(
-                            if (!expanded) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowUp,
-                            null,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-
-                }
+          IconButton(
+            modifier = Modifier.size(28.dp),
+            onClick = {
+              onDeleteDialogChange(true)
             }
+          ) {
+            Icon(
+              Icons.Default.Delete,
+              null,
+              tint = MaterialTheme.colorScheme.error
+            )
+          }
 
-
-
-            AnimatedVisibility(expanded) {
-                Text(task.descricao, modifier = Modifier.padding(top = 4.dp))
+          IconButton(
+            modifier = Modifier.size(28.dp),
+            onClick = {
+              onEditDialogChange(true)
             }
+          ) {
+            Icon(
+              Icons.Default.Edit,
+              null,
+              tint = MaterialTheme.colorScheme.secondary
+            )
+          }
 
+          IconButton(
+            modifier = Modifier.size(28.dp),
+            onClick = {
+              expanded = !expanded
+            }
+          ) {
+            Icon(
+              if (!expanded) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowUp,
+              null,
+              tint = MaterialTheme.colorScheme.primary
+            )
+          }
 
         }
+      }
+
+
+
+      AnimatedVisibility(expanded) {
+        Text(task.descricao, modifier = Modifier.padding(top = 4.dp))
+      }
+
+
     }
+  }
 
 }

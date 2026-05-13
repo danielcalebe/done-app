@@ -6,5 +6,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class EditResponse(
     val mensagem: String,
-    val tarefas: Task
+    val tarefa: Task
 )
